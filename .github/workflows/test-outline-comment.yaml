@@ -11,6 +11,12 @@ on:
     types:
       - completed
 
+# One comment job per PR branch at a time: 2 jobs listing the comments together would each
+# find none and post 2. Queued, not cancelled, so the latest outline still lands.
+concurrency:
+  group: test-outline-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
 permissions: {}
 
 jobs:
@@ -25,6 +31,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
       HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+      HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
     steps:
       - name: Download the outline
         uses: actions/download-artifact@v8
@@ -35,9 +43,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # A PR can rewrite the "Test outline" workflow it runs, so the number is not trusted:
-      # the PR must exist and its head must still be the commit the outline was computed on.
-      # An outline from an older push is skipped, so runs finishing out of order never
-      # overwrite a newer one.
+      # the PR must exist, come from the repository and branch the run tested, and its head
+      # must still be the commit the outline was computed on. workflow_run.pull_requests is
+      # not used: it is empty for a PR from a fork. An outline from an older push is
+      # skipped, so runs finishing out of order never overwrite a newer one.
       - name: Check the pull request
         id: pr
         run: |
@@ -46,9 +55,9 @@ jobs:
             echo "::error::Invalid pull request number"
             exit 1
           fi
-          head=$(gh api "repos/$REPO/pulls/$number" --jq .head.sha)
-          if [ "$head" != "$HEAD_SHA" ]; then
-            echo "Pull request #$number moved on from $HEAD_SHA, skipping"
+          pr=$(gh api "repos/$REPO/pulls/$number" --jq '[.head.repo.full_name, .head.ref, .head.sha] | join(" ")')
+          if [ "$pr" != "$HEAD_REPO $HEAD_BRANCH $HEAD_SHA" ]; then
+            echo "Pull request #$number is not at $HEAD_REPO $HEAD_BRANCH $HEAD_SHA, skipping"
             exit 0
           fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
