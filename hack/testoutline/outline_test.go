@@ -70,6 +70,7 @@ var _ = Describe("parse", func() {
 	})
 
 	PIt("shows a fork test case in the outline comment", func() {})
+	PIt("updates the comment after the concurrency and branch checks", func() {})
 })
 
 var _ = Describe("cases", func() {
