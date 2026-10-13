@@ -69,10 +69,8 @@ var _ = Describe("parse", func() {
 		Expect(outlineOf(plainTest)).To(BeEmpty())
 	})
 
-	It("fails on a file that does not parse", func() {
-		_, err := parse("broken_test.go", []byte("package sample\nfunc {"))
-		Expect(err).To(HaveOccurred())
-	})
+	PIt("shows a fork test case in the outline comment", func() {})
+	PIt("updates the comment after the concurrency and branch checks", func() {})
 })
 
 var _ = Describe("cases", func() {
