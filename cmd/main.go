@@ -1,5 +1,7 @@
 package main
 
+// Fork test of the E2E label gate: never merged.
+
 import (
 	"context"
 	"crypto/tls"
